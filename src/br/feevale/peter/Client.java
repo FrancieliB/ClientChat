@@ -7,18 +7,23 @@ import java.net.MalformedURLException;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
+import java.rmi.server.UnicastRemoteObject;
 import java.util.Date;
 
 import br.feevale.peter.log.Logger;
-
 import server.ServerRMI;
-
 import comm.Message;
-
 import client.ClientRMI;
 import exeception.PeterException;
 
-public class Client implements ClientRMI {
+public class Client extends UnicastRemoteObject implements ClientRMI {
+
+	private static final long serialVersionUID = -5199433414878316859L;
+
+	protected Client() throws RemoteException {
+		super();
+		// TODO Auto-generated constructor stub
+	}
 
 	private Integer port;
 	private String hostname;
@@ -39,18 +44,26 @@ public class Client implements ClientRMI {
 			enterCommands();
 			Logger.info( "ss" );
 			
+			keepWainting = true;
+			
 			do{
 				waitSendMessage();
 			}while(keepWainting);
 			
 			Logger.info( "ww" );
 			server.disconnectClient( this );
+			
+			String url = String.format( ClientRMI.FORMAT_URL_CLIENT, getHostname(), getPort(), getName());
+			Naming.unbind(url);
+			
 			Logger.info( "sd" );
 
 		} catch( Exception e ) {
-			Logger.error( "Erro na inicialização do cliente, tente novamente " );
+			Logger.error( "Erro na inicializaï¿½ï¿½o do cliente, tente novamente " );
 			e.printStackTrace();
 		};
+		
+		System.exit(0);
 	}
 
 	private void enterCommands() {
@@ -99,7 +112,7 @@ public class Client implements ClientRMI {
 					break;
 			}
 		} catch( PeterException pe ) {
-			Logger.error( "Sistema não reconhe comando :", command );
+			Logger.error( "Sistema nï¿½o reconhe comando :", command );
 		}
 	}
 
@@ -114,7 +127,7 @@ public class Client implements ClientRMI {
 	}
 
 	private void readServerHostname() throws IOException {
-		System.out.println( "Informe o endereço do servidor:" );
+		System.out.println( "Informe o endereï¿½o do servidor:" );
 		hostname = br.readLine();
 	}
 
@@ -126,6 +139,9 @@ public class Client implements ClientRMI {
 	@Override
 	public void conectToServer( String host, Integer port ) throws PeterException {
 		try {
+			String url = String.format( ClientRMI.FORMAT_URL_CLIENT, getHostname(), getPort(), getName());
+			Naming.rebind( url, this );
+			
 			server = (ServerRMI) Naming.lookup( String.format( ServerRMI.FORMAT_URL_SERVER, host, port ) );
 			server.registryClientForCallBack( this );
 		} catch( RemoteException | NotBoundException e ) {
